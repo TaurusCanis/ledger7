@@ -1,0 +1,12 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+    <h1>Choose Transaction Type</h1>
+    <ul>
+      <li><a href="{% url 'create_transaction_record' slug='expense' %}">Add An Expense</a></li>
+      <li><a href="{% url 'create_transaction_record' slug='credit_card_payment' %}">Add A Credit Card Payment</a></li>
+      <li><a href="{% url 'create_transaction_record' slug='deposit' %}">Add Cash Deposit</a></li>
+      <li><a href="{% url 'create_transaction_record' slug='withdrawal' %}">Add Cash Withdrawal</a></li>
+      <li><a href="{% url 'create_transaction_record' slug='transfer' %}">Transfer Funds</a></li>
+      <li><a href="{% url 'create_transaction_record' slug='adjustment' %}">Other Adjustments</a></li>
+    </ul>
+{% endblock %}

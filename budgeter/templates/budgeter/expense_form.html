@@ -1,0 +1,108 @@
+{% load static %}
+{% load budgeter_extras %}
+<h1>Add an Expense</h1>
+{% if initial %}
+INITIAL {{ initial }}
+{% endif %}
+<form method="post">{% csrf_token %}
+  {% if transaction_record_type == 'expense' %}
+  <div>
+    <label class="form-label">{{ form.description.label }}:</label>
+    <span>{{ form.description }}</span>
+  </div>
+  {% endif %}
+  <div>
+    <label class="form-label">{{ form.amount.label }}:</label>
+    <span>{{ form.amount }}</span>
+  </div>
+  <div>
+    <label class="form-label">{{ form.date.label }}:</label>
+    <input type="date" name="date" id="id_date" class="form-control" value="{{ form.date.initial|format_date }}">
+  </div>
+  {% if transaction_record_type == 'expense' %}
+  <div>
+    <label class="form-label">{{ form.category.label }}:</label>
+    <span>{{ form.category }}</span>
+  </div>
+  <div>
+    <label class="form-label">{{ form.sub_category.label }}:</label>
+    <span>{{ form.sub_category }}</span>
+  </div>
+  {% endif %}
+  <div>
+    <input type="hidden" name="account" id="id_account" value="{{ selected_account }}">
+  </div>
+  <div>
+    <input type="hidden" name="credit_card" id="id_credit_card" value="{{ selected_credit_card }}">
+  </div>
+  <div class="row py-3">
+    <div class="row">
+      <div class="col text-center">
+        <h2>Choose Payment Method</h2>
+      </div>
+    </div>
+    <div class="col">
+      <div class="row">
+        <div class="col text-center">
+          <h3>Accounts</h3>
+        </div>
+      </div>
+      <div class="row justify-content-evenly">
+        <div class="col">
+        {% for account in account_ids %}
+        <div class="row justify-content-evenly py-2">
+          <div class="col text-center">
+            <button type="button" id="account_{{ account.0 }}" class="btn border border-success text-success payment-method pm-account {% if account.0 == selected_account %}selected btn-success text-light{% endif %}">
+              {{ account.1 }}
+            </button>
+          </div>
+          </div>
+        {% endfor %}
+        </div>
+      </div>
+    </div>
+    <div class="col">
+      <div class="row">
+        <div class="col text-center">
+          <h3>Credit Cards</h3>
+        </div>
+      </div>
+      <div class="row justify-content-evenly">
+        <div class="col">
+        {% for credit_card in creditcard_ids %}
+        <div class="row justify-content-evenly">
+          <div class="col text-center">
+            <button type="button" id="creditcard_{{ credit_card.0 }}" class="btn border border-success text-success payment-method pm-credit-card {% if credit_card.0 == selected_credit_card %}selected btn-success text-light{% endif %}">
+              {{ credit_card.1 }}
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+        </div>
+      </div>
+    </div>
+  <div class="row justify-content-center py-3">
+    <div class="col-4">
+      <div class="row">
+        <div class="col">
+          <label class="form-label">{{ form.exclude_from_accounting.label }}:</label>
+          <span>{{ form.exclude_from_accounting }}</span>
+        </div>
+      </div>
+      {% if transaction_record_type == 'expense' %}
+      <div class="row">
+        <div class="col">
+          <label class="form-label">{{ form.has_expense_items.label }}:</label>
+          <span>{{ form.has_expense_items }}</span>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <div class="row justify-content-center">
+    <div class="col-4 text-center">
+      <button class="btn btn-primary" type="submit">Submit</button>
+    </div>
+  </div>
+</form>
+<script type="text/javascript" src="{% static 'budgeter/js/transactionrecord_form.js' %}"></script>

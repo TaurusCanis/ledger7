@@ -1,0 +1,64 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+<table>
+  <thead>
+    <th>Date</th>
+    <th>Amount</th>
+    <th>Description</th>
+    <th>Category</th>
+    <th>Payment From</th>
+  </thead>
+  <tbody>
+  <tr>
+    <td>{{ object.date }}</td>
+    <td>{{ object.amount }}</td>
+    <td>{{ object.description }}</td>
+    <td>{{ object.category }}</td>
+    {% if object.account %}
+    <td>{{ object.account }}</td>
+    {% elif object.credit_card %}
+    <td>{{ object.credit_card }}</td>
+    {% endif %}
+    {% comment %}
+{% for name, value in object.get_fields %}
+  {% if value %}
+  <td>{{ value }}</td>
+  {% endif %}
+{% endfor %}
+{% endcomment %}
+</tr>
+</tbody>
+</table>
+<a href="{% url 'transaction_record_update_view' object.id %}">Edit Transaction Record</a>
+{% if object.has_expense_items %}
+<h1>Expense Items</h1>
+<table>
+  <thead>
+    <th>Name</th>
+    <th>Amount</th>
+  </thead>
+  <tbody>
+    {% for expense_item in expense_items %}
+    <tr>
+      <td>{{ expense_item.name }}</td>
+      <td>{{ expense_item.amount }}</td>
+      <td><a href="{% url 'expense_item_update' expense_item.id %}">Edit Expense Item</a></td>
+      <td><a href="{% url 'expense_item_delete' expense_item.id %}">Delete Expense Item</a></td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% comment %}
+{% for expense_item in expense_items %}
+{% for key, value in expense_item.get_fields %}
+<div>{{ key }}: {{ value }}</div>
+{% endfor %}
+<a href="{% url 'expense_item_update' expense_item.id %}">Edit Expense Item</a>
+{% endfor %}
+{% endcomment %}
+{% endif %}
+    {% comment %}
+    <h2>Recent Expenses: </h2>
+        {% include 'budgeter/expense_list.html' %}
+      {% endcomment %}
+{% endblock %}

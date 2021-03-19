@@ -1,0 +1,18 @@
+{% extends base_template %}
+{% block content %}
+<h1 class="text-center">Accounts</h1>
+<h4>Total Account Balance: $</h4>
+<ul>
+{% for account in accounts %}
+<li>{{ account }}: ${{ account.balance }} - 
+
+    <a href="{% url 'account_detail' pk=account.id %}">View</a>
+    <a href="{% url 'delete_account' pk=account.id %}">Delete</a>
+
+</li>
+{% empty %}
+    <li>No accounts yet.</li>
+{% endfor %}
+</ul>
+<a href="{% url 'add_account' %}">Add an Account</a>
+{% endblock %}

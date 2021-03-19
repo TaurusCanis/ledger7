@@ -1,0 +1,33 @@
+{% extends base_template %}
+{% load budgeter_extras %}
+{% block content %}
+<h2>Upcoming Expenses</h2>
+<table>
+  <thead>
+    <tr>
+      <th>Due Date</th>
+      <th>Amount</th>
+      <th>Paid To</th>
+      <th>Category</th>
+      <th>Edit</th>
+      <th>Delete</th>
+      <th>Mark as Paid</th>
+    <tr>
+  </thead>
+  <tbody>
+    {% for expense in upcoming_expenses %}
+    <tr>
+      <td>{{ expense.payment_due_date_day|get_month }}</td>
+      <td>${{ expense.amount }}</td>
+      <td>{{ expense.paid_to }}</td>
+      <td>{{ expense.category }}</td>
+      <td><a href="{% url 'edit_expense' expense.id %}">Edit</a></td>
+      <td><a href="{% url 'delete_expense' expense.id %}">Delete</a></td>
+      <td><a href="{% url 'mark_as_paid' expense.id %}">Mark as Paid</a></td>
+    </tr>
+    {% empty %}
+    <h3>No Recent Expenses</h3>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+<h1>Transactions</h1>
+
+{% for name, value in transaction_data.transaction_type.get_fields %}
+  {% if value %}
+  <div>{{ name }}: {{ value }}</div>
+  {% endif %}
+{% endfor %}
+{% if transaction_data.transaction_type.has_expense_items %}
+<a href="{% url 'expense_item_list_view' transaction_data.transaction_type.id %}">View Expense Items</a>
+{% endif %}
+{% endblock %}

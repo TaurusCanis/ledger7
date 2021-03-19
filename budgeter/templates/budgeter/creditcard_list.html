@@ -1,0 +1,16 @@
+{% extends base_template %}
+{% block content %}
+<h1 class="text-center">Credit Cards</h1>
+<h4>Total Credit Card Balance: ${{ credit_cards_total }}</h4>
+<ul>
+{% for credit_card in credit_cards %}
+<li>{{ credit_card }}: ${{ credit_card.balance }} -
+    <a href="{% url 'credit_card_detail_view' pk=credit_card.id %}">View</a>
+    <a href="{% url 'delete_credit_card' pk=credit_card.id %}">Delete</a>
+</li>
+{% empty %}
+    <li>No accounts yet.</li>
+{% endfor %}
+</ul>
+<a href="{% url 'create_credit_card' %}">Add a Credit Card</a>
+{% endblock %}

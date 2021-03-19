@@ -1,0 +1,9 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+    <h1>Account: {{ object.name }}</h1>
+    <h2>Balance: ${{ object.balance }}</h2>
+    <div><a href="{% url 'update_credit_card' pk=object.id %}">Edit Credit Card</a></div>
+    <div><a href="{% url 'create_transaction_record' %}">Add a Transaction</a></div>
+    <h2>Recent Transactions: </h2>
+        {% include 'budgeter/transaction_records_list.html' %}
+{% endblock %}

@@ -1,0 +1,24 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+<h1>Expense Items</h1>
+<table>
+  <thead>
+    <tr>
+      <th></th>
+      <th>Item Name</th>
+      <th>Amount</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for expense_item in expense_items_list %}
+    <tr>
+      <td>{{ forloop.counter }}</td>
+      <td>{{ expense_item.name }}</td>
+      <td>${{ expense_item.amount }}</td>
+      <td><a href="">Edit Expense Item</a></td>
+      <td><a href="">Delete Expense Item</a></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

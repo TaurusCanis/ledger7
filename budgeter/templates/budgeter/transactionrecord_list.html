@@ -1,0 +1,75 @@
+{% extends base_template %}
+{% load budgeter_extras %}
+{% block content %}
+<h3>Recent Transaction Total: ${{ transactions_total }}</h3>
+{% if base_template == 'budgeter/base.html' %}
+<form action="{% url 'transaction_records_list_view' %}" method="GET">
+  {% csrf_token %}
+  <label for="start_date">Start Date</label>
+  <input type="date" name="start_date" {% if start_date %} value={{ start_date }} {% endif %}>
+  <label for="end_date">End Date</label>
+  <input type="date" name="end_date" {% if end_date %} value={{ end_date }} {% endif %}>
+  <select multiple name="transaction_types">
+    <option value="D">Deposit</option>
+    <option value="W">Withdrawal</option>
+    <option value="T">Transfer</option>
+    <option value="X">Expense</option>
+    <option value="AC">Adjustment - Credit</option>
+    <option value="AD">Adjustment - Debit</option>
+  </select>
+  {% comment %}
+  <select multiple name="accounts">
+    {% for account in all_accounts %}
+      <option value="{{ account.id }}">{{ account.name }}</option>
+    {% endfor %}
+  </select>
+  {% endcomment %}
+  <input type="submit">
+</form>
+{% for account in all_accounts %}
+{% if account|to_class_name == 'Account' %}
+<a href="{% url 'account_detail' pk=account.id %}">{{ account.name }}</a>
+{% elif account|to_class_name == 'CreditCard' %}
+<a href="{% url 'credit_card_detail_view' pk=account.id %}">{{ account.name }}</a>
+{% endif %}
+{% endfor %}
+{% endif %}
+<table class="col-12">
+  <thead>
+    <tr>
+      <th>Date</th>
+      <th>Type</th>
+      <th>Account</th>
+      <th>For</th>
+      <th>Credit</th>
+      <th>Debit</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for transaction in object_list %}
+  <tr>
+    <td>{{ transaction.date }}</td>
+    <td>{{ transaction.get_type_display }}</td>
+    <td>{{ transaction.account }}</td>
+    {% if transaction.type == 'X' %}
+    <td>{{ transaction.paid_to }}</td>
+    {% else %}
+    <td></td>
+    {% endif %}
+    {% if transaction.ledger_type == 'D' %}
+      <td></td>
+      <td>${{ transaction.amount }}</td>
+    {% elif transaction.ledger_type == 'C' %}
+      <td>${{ transaction.amount }}</td>
+      <td></td>
+    {% endif %}
+    <td><a href="{% url 'transaction_record_detail_view' transaction.id %}">View</a></td>
+    <td><a href="{% url 'transaction_record_update_view' transaction.id %}">Edit</a></td>
+    <td><a href="{% url 'transaction_record_delete_view' transaction.id %}">Delete</a></td>
+  </tr>
+  {% empty %}
+  <h3>No Recent Expenses</h3>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

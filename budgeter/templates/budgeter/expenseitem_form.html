@@ -1,0 +1,20 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+<h1>Create an Expense Item</h1>
+<form method="post">{% csrf_token %}
+    {{ form.as_p }}
+    {% if not update_expense_item %}
+    <div class="row">
+      <div class="col">
+        <label for="add_new_item">Add Another Item</label>
+        <input class="form-check-input" type="checkbox" name="add_new_item">
+      </div>
+    </div>
+    {% endif %}
+    <div class="row">
+      <div class="col text-center">
+        <button class="btn btn-primary" type="submit">Submit</button>
+      </div>
+    </div>
+</form>
+{% endblock %}

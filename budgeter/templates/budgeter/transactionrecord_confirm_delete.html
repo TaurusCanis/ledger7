@@ -1,0 +1,12 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+<form method="post">{% csrf_token %}
+    <p>Are you sure you want to delete this transaction record?:</p>
+    {% for name, value in transactionrecord.get_fields %}
+      {% if value %}
+      <div>{{ name }}: {{ value }}</div>
+      {% endif %}
+    {% endfor %}
+    <input type="submit" value="Confirm">
+</form>
+{% endblock %}

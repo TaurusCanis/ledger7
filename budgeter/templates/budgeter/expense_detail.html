@@ -1,0 +1,6 @@
+{% extends 'budgeter/base.html' %}
+{% block content %}
+  {% for name, value in expense.get_fields %}
+  <div>{{ name }} - {{ value }}</div>
+  {% endfor %}
+{% endblock %}
