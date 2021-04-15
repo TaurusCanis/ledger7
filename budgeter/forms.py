@@ -22,3 +22,6 @@ class TransactionRecordCreditCardPaymentForm(TransactionRecordBaseForm):
 
 class TransactionRecordTransferForm(TransactionRecordBaseForm):
     transfer_to_account = forms.CharField(required=False, widget=forms.HiddenInput())
+
+class TransactionRecordAdjustmentForm(TransactionRecordBaseForm):
+    ledger_type = forms.CharField()

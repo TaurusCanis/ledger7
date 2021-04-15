@@ -1,9 +1,11 @@
 from django.db import models
 from datetime import datetime
+from django.contrib.auth.models import User
 
 # Create your models here.
 
 class Account(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     balance = models.DecimalField(decimal_places=2, max_digits=7)
     type = models.CharField(max_length=30, choices=[('checking', 'Checking'),('savings', 'Savings'),('cash', 'Cash')])
@@ -16,6 +18,7 @@ class Account(models.Model):
         return [(field.name, field.value_to_string(self)) for field in Account._meta.fields]
 
 class CreditCard(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     balance = models.DecimalField(decimal_places=2, max_digits=7)
     interest_rate = models.DecimalField(decimal_places=2, max_digits=5, default=0.0)
@@ -27,12 +30,15 @@ class CreditCard(models.Model):
         return [(field.name, field.value_to_string(self)) for field in CreditCard._meta.fields]
 
 class TransactionRecord(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     type = models.CharField(max_length=10, choices=[('X', 'Expense'), ('C', 'Credit Card Payment'), ('D', 'Deposit'), ('W', 'Withdrawal'), ('T', 'Transfer'), ('AC', 'Adjustment')])
     date = models.DateField(default=datetime.now)
     amount = models.DecimalField(decimal_places=2, max_digits=7)
-    description = models.CharField(max_length=200, blank=True, null=True)
-    category = models.CharField(max_length=200, default=None, blank=True, null=True)
-    sub_category = models.CharField(max_length=200, default=None, blank=True, null=True)
+    description = models.ForeignKey("Description", on_delete=models.CASCADE, blank=True, null=True)
+    # category = models.CharField(max_length=200, default=None, blank=True, null=True)
+    # sub_category = models.CharField(max_length=200, default=None, blank=True, null=True)
+    category = models.ForeignKey("Category", on_delete=models.CASCADE, blank=True, null=True)
+    sub_category = models.ForeignKey("SubCategory", on_delete=models.CASCADE, blank=True, null=True)
     ledger_type = models.CharField(max_length=10, choices=[('C', 'Credit'), ('D', 'Debit')])
     account = models.ForeignKey(Account, on_delete=models.CASCADE, blank=True, null=True)
     credit_card = models.ForeignKey(CreditCard, on_delete=models.CASCADE, blank=True, null=True)
@@ -42,6 +48,28 @@ class TransactionRecord(models.Model):
 
     def get_fields(self):
         return [(field.name, field.value_to_string(self)) for field in TransactionRecord._meta.fields]
+
+class TransferAccounts(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account_to = models.ForeignKey(TransactionRecord, on_delete=models.CASCADE, related_name="AccountToTR", blank=True, null=True)
+    account_from = models.ForeignKey(TransactionRecord, on_delete=models.CASCADE, related_name="AccountFromTR", blank=True, null=True)
+
+class Description(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=500)
+
+class Category(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=500)
+
+class SubCategory(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=500)
+
+class CreditCardPayment(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    account = models.ForeignKey(TransactionRecord, on_delete=models.CASCADE, related_name="AccountPaidFrom", blank=True, null=True)
+    credit_card = models.ForeignKey(TransactionRecord, on_delete=models.CASCADE, related_name="CreditCardPaidTo", blank=True, null=True)
 
 class Transaction(models.Model):
     date = models.DateField(default=datetime.now)
@@ -74,6 +102,7 @@ class Expense(models.Model):
         return [(field.name, field.value_to_string(self)) for field in Expense._meta.fields]
 
 class ExpenseItem(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
     name = models.CharField(max_length=100)
     amount = models.DecimalField(decimal_places=2, max_digits=7)
     transaction_record = models.ForeignKey(TransactionRecord, on_delete=models.CASCADE, default=1)

@@ -1,7 +1,16 @@
-{% extends 'budgeter/base.html' %}
 {% block content %}
 <h1>Add Adjustment</h1>
 <form method="post">{% csrf_token %}
+    <div class="row justify-content-evenly py-2">
+      <div class="col text-center">
+        <button type="button" id="account_{{ account.0 }}" class="btn border border-success text-success payment-method pm-account {% if account.0 == selected_account %}selected btn-success text-light{% endif %}">
+          Add Funds
+        </button>
+        <button type="button" id="account_{{ account.0 }}" class="btn border border-success text-success payment-method pm-account {% if account.0 == selected_account %}selected btn-success text-light{% endif %}">
+          Remove Funds
+        </button>
+      </div>
+    </div>
     {{ form.as_p }}
     <input type="submit" value="Save">
 </form>

@@ -12,8 +12,8 @@
   <tr>
     <td>{{ object.date }}</td>
     <td>{{ object.amount }}</td>
-    <td>{{ object.description }}</td>
-    <td>{{ object.category }}</td>
+    <td>{{ object.description.name }}</td>
+    <td>{{ object.category.name }}</td>
     {% if object.account %}
     <td>{{ object.account }}</td>
     {% elif object.credit_card %}

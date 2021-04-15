@@ -2,8 +2,14 @@
 {% load budgeter_extras %}
 {% block content %}
 <h3>Recent Transaction Total: ${{ transactions_total }}</h3>
+{% comment %}
 {% if base_template == 'budgeter/base.html' %}
-<form action="{% url 'transaction_records_list_view' %}" method="GET">
+{% endcomment %}
+account_id: {{ account_id }}
+account.id: {{ account.id }}
+account.type: {{ account.type }}
+account: {{ account }}
+<form action="{% url 'transaction_records_list_view' account_id=account_id account_type=account|get_class %}" method="GET">
   {% csrf_token %}
   <label for="start_date">Start Date</label>
   <input type="date" name="start_date" {% if start_date %} value={{ start_date }} {% endif %}>
@@ -33,43 +39,8 @@
 <a href="{% url 'credit_card_detail_view' pk=account.id %}">{{ account.name }}</a>
 {% endif %}
 {% endfor %}
+{% comment %}
 {% endif %}
-<table class="col-12">
-  <thead>
-    <tr>
-      <th>Date</th>
-      <th>Type</th>
-      <th>Account</th>
-      <th>For</th>
-      <th>Credit</th>
-      <th>Debit</th>
-    </tr>
-  </thead>
-  <tbody>
-  {% for transaction in object_list %}
-  <tr>
-    <td>{{ transaction.date }}</td>
-    <td>{{ transaction.get_type_display }}</td>
-    <td>{{ transaction.account }}</td>
-    {% if transaction.type == 'X' %}
-    <td>{{ transaction.paid_to }}</td>
-    {% else %}
-    <td></td>
-    {% endif %}
-    {% if transaction.ledger_type == 'D' %}
-      <td></td>
-      <td>${{ transaction.amount }}</td>
-    {% elif transaction.ledger_type == 'C' %}
-      <td>${{ transaction.amount }}</td>
-      <td></td>
-    {% endif %}
-    <td><a href="{% url 'transaction_record_detail_view' transaction.id %}">View</a></td>
-    <td><a href="{% url 'transaction_record_update_view' transaction.id %}">Edit</a></td>
-    <td><a href="{% url 'transaction_record_delete_view' transaction.id %}">Delete</a></td>
-  </tr>
-  {% empty %}
-  <h3>No Recent Expenses</h3>
-  {% endfor %}
-  </tbody>
-</table>
+{% endcomment %}
+{% include 'budgeter/transaction_record_form_list.html' %}
 {% endblock %}

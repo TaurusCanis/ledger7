@@ -4,7 +4,7 @@
 <h4>Total Account Balance: $</h4>
 <ul>
 {% for account in accounts %}
-<li>{{ account }}: ${{ account.balance }} - 
+<li>{{ account }}: ${{ account.balance }} -
 
     <a href="{% url 'account_detail' pk=account.id %}">View</a>
     <a href="{% url 'delete_account' pk=account.id %}">Delete</a>

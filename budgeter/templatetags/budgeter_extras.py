@@ -25,3 +25,8 @@ def to_class_name(value):
 def format_date(value):
     print("value: ", value, " type: ", type(value))
     return str(value)
+
+@register.filter
+def get_class(value):
+    print("VALUE: ", value)
+    return value.__class__.__name__

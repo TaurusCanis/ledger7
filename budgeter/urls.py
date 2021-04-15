@@ -1,4 +1,5 @@
-from django.urls import path
+from django.urls import path, include
+from django.contrib.auth import views as auth_views
 
 from . import views
 
@@ -34,6 +35,8 @@ urlpatterns = [
     path('create_transaction_record', views.TransactionRecordOptions.as_view(), name='create_transaction_record'),
     path('create_transaction_record/<slug>/', views.CreateTransactionRecord.as_view(), name='create_transaction_record'),
     path('transaction_records_list_view', views.TransactionRecordsListView.as_view(), name='transaction_records_list_view'),
+    path('transaction_records_list_view/<account_id>/', views.TransactionRecordsListView.as_view(), name='transaction_records_list_view'),
+    path('transaction_records_list_view/<account_id>/<account_type>/', views.TransactionRecordsListView.as_view(), name='transaction_records_list_view'),
     path('transaction_record_delete_view/<pk>/', views.DeleteTransactionRecordView.as_view(), name='transaction_record_delete_view'),
     path('transaction_record_detail_view/<pk>/', views.TransactionRecordDetailView.as_view(), name='transaction_record_detail_view'),
     path('transaction_record_update_view/<pk>/', views.UpdateTransactionRecordView.as_view(), name='transaction_record_update_view'),
@@ -45,4 +48,8 @@ urlpatterns = [
     path('credit_card_list_view/', views.CreditCardListView.as_view(), name='credit_card_list_view'),
     path('expense_item_update/<pk>/', views.ExpenseItemUpdateView.as_view(), name='expense_item_update'),
     path('expense_item_delete/<pk>/', views.ExpenseItemDeleteView.as_view(), name='expense_item_delete'),
+    path('register', views.UserCreationView.as_view(), name='register'),
+    path('dashboard/<pk>/', views.DashboardView.as_view(), name='dashboard'),
+    path('login/', views.LoginView.as_view(), name='login'),
+    path('logout/', views.LogoutView.as_view(), {'next_page': '/index/'}, name='logout'),
 ]

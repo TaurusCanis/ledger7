@@ -48,7 +48,7 @@
     {% elif transaction.credit_card %}
     <td>{{ transaction.credit_card }}</td>
     {% endif %}
-    <td>{{ transaction.description }}</td>
+    <td>{{ transaction.description.name }}</td>
     {% if transaction.type == 'X' %}
     <td>{{ transaction.paid_to }}</td>
     {% else %}
@@ -65,7 +65,7 @@
     <td><a href="{% url 'transaction_record_delete_view' transaction.id %}">Delete</a></td>
   </tr>
   {% empty %}
-  <h3>No Recent Expenses</h3>
+  <h3>No Recent Transactions</h3>
   {% endfor %}
   </tbody>
 </table>

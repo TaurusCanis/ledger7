@@ -1,9 +1,40 @@
 {% extends 'budgeter/base.html' %}
+{% load budgeter_extras %}
 {% block content %}
     <h1>Account: {{ object.name }}</h1>
     <h2>Balance: ${{ object.balance }}</h2>
     <div><a href="{% url 'update_credit_card' pk=object.id %}">Edit Credit Card</a></div>
     <div><a href="{% url 'create_transaction_record' %}">Add a Transaction</a></div>
     <h2>Recent Transactions: </h2>
-        {% include 'budgeter/transaction_records_list.html' %}
+    <form action="{% url 'credit_card_detail_view' pk=account_id %}" method="GET">
+        {% csrf_token %}
+        <label for="start_date">Start Date</label>
+        <input type="date" name="start_date" {% if start_date %} value={{ start_date }} {% endif %}>
+        <label for="end_date">End Date</label>
+        <input type="date" name="end_date" {% if end_date %} value={{ end_date }} {% endif %}>
+        <select multiple name="transaction_types">
+          <option value="D">Deposit</option>
+          <option value="W">Withdrawal</option>
+          <option value="T">Transfer</option>
+          <option value="X">Expense</option>
+          <option value="AC">Adjustment - Credit</option>
+          <option value="AD">Adjustment - Debit</option>
+        </select>
+        {% comment %}
+        <select multiple name="accounts">
+          {% for account in all_accounts %}
+            <option value="{{ account.id }}">{{ account.name }}</option>
+          {% endfor %}
+        </select>
+        {% endcomment %}
+        <input type="submit">
+      </form>
+      {% for account in all_accounts %}
+      {% if account|to_class_name == 'Account' %}
+      <a href="{% url 'account_detail' pk=account.id %}">{{ account.name }}</a>
+      {% elif account|to_class_name == 'CreditCard' %}
+      <a href="{% url 'credit_card_detail_view' pk=account.id %}">{{ account.name }}</a>
+      {% endif %}
+      {% endfor %}
+        {% include 'budgeter/transaction_record_form_list.html' %}
 {% endblock %}

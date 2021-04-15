@@ -1,37 +1,45 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from django.http import HttpResponse
-from django.urls import reverse
+from django.urls import reverse, resolve
 from django.views.generic.edit import CreateView, DeleteView, UpdateView, FormView
 from django.views.generic.base import TemplateView
 from django.views.generic.list import ListView
 from django.views.generic.detail import DetailView
-from budgeter.models import Account, Expense, ExpenseItem, Deposit, Withdrawal, Adjustment, Transfer, Transaction, TransactionRecord, RecurringExpense, CreditCard
+from budgeter.models import Account, Expense, ExpenseItem, Deposit, Withdrawal, Adjustment, Transfer, Transaction, TransactionRecord, RecurringExpense, CreditCard, TransferAccounts, Category, SubCategory, Description, CreditCardPayment
 from decimal import Decimal
 from django.db.models import Sum
 from datetime import datetime
 from django import forms
-from budgeter.forms import TransactionRecordBaseForm, TransactionRecordExpenseForm, TransactionRecordTransferForm, TransactionRecordCreditCardPaymentForm
+from budgeter.forms import TransactionRecordBaseForm, TransactionRecordExpenseForm, TransactionRecordTransferForm, TransactionRecordCreditCardPaymentForm, TransactionRecordAdjustmentForm
 from django.forms import modelform_factory
 from django.forms.models import model_to_dict
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.views import LoginView, LogoutView
+from django.contrib.auth import authenticate, login
+
 
 class IndexView(TemplateView):
     template_name = 'budgeter/index.html'
 
+class DashboardView(LoginRequiredMixin, TemplateView):
+    template_name = 'budgeter/dashboard.html'
+
     def get_context_data(self, **kwargs):
         context = super().get_context_data()
-        accounts = Account.objects.all()
-        transactions_list = Transaction.objects.all().order_by('-date')
+        accounts = Account.objects.filter(user=self.request.user)
+        # transactions_list = Transaction.objects.filter(user=self.request.user).order_by('-date')
         # last_five_transactions = Transaction.objects.all().order_by('-date')[:5]
         # context['transactions'] = last_five_transactions
 
-        transaction_records_list = TransactionRecord.objects.all().order_by('-date')[:10]
-        print("transaction_records_list: ", transaction_records_list)
-        if transaction_records_list.count() != 0:
-            print("transaction_records_list[0].amount: ", transaction_records_list[0].amount)
-            print("transactions_list.aggregate(Sum('amount'))['amount__sum']: ", transactions_list.aggregate(Sum('amount'))['amount__sum'])
+        transaction_records_list = TransactionRecord.objects.filter(user=self.request.user).order_by('-date')[:10]
+        # if transaction_records_list.count() != 0:
+        #     print("transaction_records_list[0].amount: ", transaction_records_list[0].amount)
+        #     print("transactions_list.aggregate(Sum('amount'))['amount__sum']: ", transactions_list.aggregate(Sum('amount'))['amount__sum'])
         context['transaction_records_list'] = transaction_records_list
 
-        credit_cards = CreditCard.objects.all()
+        credit_cards = CreditCard.objects.filter(user=self.request.user)
         context['credit_cards'] = credit_cards
 
         upcoming_expenses = RecurringExpense.objects.all()
@@ -81,15 +89,55 @@ class IndexView(TemplateView):
 def index(request):
     return render(request, "budgeter/index.html")
 
-class CreateAccountView(CreateView):
-    model = Account
-    fields = '__all__'
-    success_url = '/budgeter/'
+class UserCreationView(CreateView):
+    print("CREATION VIEW")
+    form_class = UserCreationForm
+    template_name = 'auth/user_form.html'
 
-class AccountUpdateView(UpdateView):
+    def get_success_url(self):
+        user = authenticate(username=self.request.POST.get('username'), password=self.request.POST.get('password1'))
+        if user is not None:
+            print("AUTHETICATED")
+            login(self.request, user)
+            return reverse('dashboard', kwargs={ 'pk': user.id })
+
+        else:
+            print("NOT AUTHENTICATED")
+            return redirect('register')
+
+
+class LoginView(LoginView):
+    print("LOGIN VIEW")
+    def get_success_url(self):
+        print("LOGGED IN!")
+        return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
+
+class LogoutView(LogoutView):
+    next_page = 'index'
+    print("LOGOUT VIEW")
+    def get_success_url(self):
+        print("LOGGED OUT")
+        return reverse('index')
+
+class CreateAccountView(LoginRequiredMixin, CreateView):
     model = Account
-    fields = '__all__'
-    success_url = '/budgeter/'
+    fields = ['name', 'balance', 'type', 'exclude_from_available_funds']
+
+    def form_valid(self, form):
+        account = form.save(commit=False)
+        account.user_id = self.request.user.id
+        account.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
+
+class AccountUpdateView(LoginRequiredMixin, UpdateView):
+    model = Account
+    fields = ['name', 'balance', 'type', 'exclude_from_available_funds']
+
+    def get_success_url(self):
+        return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -99,7 +147,7 @@ class AccountUpdateView(UpdateView):
         form.fields['exclude_from_available_funds'].widget = forms.CheckboxInput(attrs={'class':'form-check-input'})
         return form
 
-class AccountListView(ListView):
+class AccountListView(LoginRequiredMixin, ListView):
     model = Account
     context_object_name = 'accounts'
 
@@ -110,36 +158,137 @@ class AccountListView(ListView):
         context['base_template'] = 'budgeter/base.html'
         return context
 
-class AccountDetailView(DetailView):
+class AccountDetailView(LoginRequiredMixin, DetailView):
     model = Account
 
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        print("self.object.id: ", self.object.id)
-        transaction_records_list = TransactionRecord.objects.filter(account=self.object.id).order_by('date')
-        print("transaction_records_list: ", transaction_records_list)
-        context['transaction_records_list'] = transaction_records_list
-        if transaction_records_list.count() == 0:
-            context['transaction_records_total'] = 0
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     print("self.object.id: ", self.object.id)
+    #     transaction_records_list = TransactionRecord.objects.filter(account=self.object.id).order_by('date')
+    #     print("transaction_records_list: ", transaction_records_list)
+    #     context['transaction_records_list'] = transaction_records_list
+    #     if transaction_records_list.count() == 0:
+    #         context['transaction_records_total'] = 0
+    #     else:
+    #         context['transaction_records_total'] = round(transaction_records_list.aggregate(Sum('amount'))['amount__sum'], 2)
+    #     context['base_template'] = 'budgeter/no_base.html'
+    #     return context
+
+    def get_transaction_types(self):
+        if 'transaction_types' in self.request.GET and self.request.GET['transaction_types'] is not '':
+            return self.request.GET.getlist('transaction_types')
         else:
-            context['transaction_records_total'] = round(transaction_records_list.aggregate(Sum('amount'))['amount__sum'], 2)
+            return ['D', 'W', 'T', 'X', 'AC', 'AD']
+
+    def get_accounts(self):
+        print("self.request.GET: ", self.request.GET)
+        if 'accounts' in self.request.GET and self.request.GET['accounts'] is not '':
+            print("self.request.GET.get('accounts'): ", self.request.GET.get('accounts'))
+            return Account.objects.filter(id__in=self.request.GET.getlist('accounts'), user=self.request.user)
+        else:
+            print("NONE")
+            return None
+
+    def get_date_range(self):
+        if 'start_date' in self.request.GET and self.request.GET['start_date'] is not '':
+            start_date = self.request.GET['start_date']
+            if self.request.GET['end_date']:
+                end_date = self.request.GET['end_date']
+            else:
+                end_date = datetime.today().strftime('%Y-%m-%d')
+            return [start_date, end_date]
+        else:
+            return ['2021-01-01', datetime.today().strftime('%Y-%m-%d')]
+
+    # def get_queryset(self):
+    #     queryset = super().get_queryset()
+    #     date_range = self.get_date_range()
+    #     transaction_types = self.get_transaction_types()
+    #     accounts = self.get_accounts()
+    #     all_accounts = Account.objects.all()
+    #     if accounts is None:
+    #         accounts = all_accounts
+    #     queryset = queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
+    #     return queryset
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data()
+
+        if 'account_id' in self.kwargs:
+            print("IN")
+            context['account_id'] = self.kwargs['account_id']
+            print("self.kwargs['account_id']: ", self.kwargs['account_id'])
+        elif 'pk' in self.kwargs:
+            print("PK")
+            context['account_id'] = self.kwargs['pk']
+            print("self.kwargs['account_id']: ", self.kwargs['pk'])
+        else:
+            print("OUT")
+            context['account_id'] = None
+        print("context: ", context)
+
+        transactionrecord_queryset = TransactionRecord.objects.filter(account=self.object)
+        date_range = self.get_date_range()
+        transaction_types = self.get_transaction_types()
+        accounts = self.get_accounts()
+        all_accounts = Account.objects.filter(user=self.request.user)
+        if accounts is None:
+            accounts = all_accounts
+        transaction_record_list = transactionrecord_queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
+        context['transaction_record_list'] = transaction_record_list
+
+        transaction_types = self.get_transaction_types()
+
+        date_range = self.get_date_range()
+        context['start_date'] = date_range[0]
+        context['end_date'] = date_range[1]
+
+        accounts = self.get_accounts()
+        all_accounts = list(Account.objects.filter(user=self.request.user))
+        all_accounts.extend(list(CreditCard.objects.filter(user=self.request.user)))
+        if accounts is None:
+            accounts = all_accounts
+        context['accounts'] = accounts
+        context['all_accounts'] = all_accounts
+        print("context['accounts']: ", context['accounts'])
+
+        print("date_range: ", date_range)
+
+        # self.object_list = super().get_queryset().filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
+
+        context['next_url'] = 'account_detail'
+
+        context['transactions'] = transaction_record_list
+        # context['transactions'] = [self.format_transaction(transaction) for transaction in transactions_list]
+        if transaction_record_list.count() == 0:
+            context['transactions_total'] = 0
+        else:
+            context['transactions_total'] = round(transaction_record_list.aggregate(Sum('amount'))['amount__sum'], 2)
         context['base_template'] = 'budgeter/no_base.html'
         return context
 
-class AccountDeleteView(DeleteView):
+class AccountDeleteView(LoginRequiredMixin, DeleteView):
     model = Account
 
     def get_success_url(self):
-        return reverse('index')
+        return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
 
-class CreateCreditCardView(CreateView):
+class CreateCreditCardView(LoginRequiredMixin, CreateView):
     model = CreditCard
-    fields = '__all__'
-    success_url = '/budgeter/'
+    fields = ['name', 'balance', 'interest_rate']
 
-class UpdateCreditCardView(UpdateView):
+    def form_valid(self, form):
+        credit_card = form.save(commit=False)
+        credit_card.user_id = self.request.user.id
+        credit_card.save()
+        return super().form_valid(form)
+
+    def get_success_url(self):
+        return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
+
+class UpdateCreditCardView(LoginRequiredMixin, UpdateView):
     model = CreditCard
-    fields = '__all__'
+    fields = ['name', 'balance', 'interest_rate']
 
     def get_form(self, form_class=None):
         form = super().get_form(form_class)
@@ -149,42 +298,129 @@ class UpdateCreditCardView(UpdateView):
         return form
 
     def get_success_url(self):
-        return reverse('index')
+        return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
 
-class DeleteCreditCardView(DeleteView):
+class DeleteCreditCardView(LoginRequiredMixin, DeleteView):
     model = CreditCard
 
     def get_success_url(self):
-        return reverse('index')
+        return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
 
-class CreditCardDetailView(DetailView):
+class CreditCardDetailView(LoginRequiredMixin, DetailView):
     model = CreditCard
+
+    # def get_context_data(self, **kwargs):
+    #     context = super().get_context_data(**kwargs)
+    #     context['base_template'] = 'budgeter/no_base.html'
+    #     transaction_records_list = TransactionRecord.objects.filter(credit_card=self.object.id).order_by('date')
+    #     for tr in transaction_records_list:
+    #         for k, v in model_to_dict(tr).items():
+    #             print("k: ", k, "v: ", v)
+    #         print("*********************")
+    #     context['transaction_records_list'] = transaction_records_list
+    #     if transaction_records_list.count() == 0:
+    #         context['transaction_records_total'] = 0
+    #     else:
+    #         context['transaction_records_total'] = round(transaction_records_list.aggregate(Sum('amount'))['amount__sum'], 2)
+    #
+    #     return context
+
+    def get_transaction_types(self):
+        if 'transaction_types' in self.request.GET and self.request.GET['transaction_types'] is not '':
+            return self.request.GET.getlist('transaction_types')
+        else:
+            return ['D', 'W', 'T', 'X', 'AC', 'AD']
+
+    def get_accounts(self):
+        if 'accounts' in self.request.GET and self.request.GET['accounts'] is not '':
+            print("self.request.GET.get('accounts'): ", self.request.GET.get('accounts'))
+            return Account.objects.filter(user=self.request.user, id__in=self.request.GET.getlist('accounts'))
+        else:
+            print("NONE")
+            return None
+
+    def get_date_range(self):
+        if 'start_date' in self.request.GET and self.request.GET['start_date'] is not '':
+            start_date = self.request.GET['start_date']
+            if self.request.GET['end_date']:
+                end_date = self.request.GET['end_date']
+            else:
+                end_date = datetime.today().strftime('%Y-%m-%d')
+            return [start_date, end_date]
+        else:
+            return ['2021-01-01', datetime.today().strftime('%Y-%m-%d')]
+
+    # def get_queryset(self):
+    #     queryset = super().get_queryset()
+    #     date_range = self.get_date_range()
+    #     transaction_types = self.get_transaction_types()
+    #     accounts = self.get_accounts()
+    #     all_accounts = Account.objects.all()
+    #     if accounts is None:
+    #         accounts = all_accounts
+    #     queryset = queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
+    #     return queryset
 
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        context['base_template'] = 'budgeter/no_base.html'
-        transaction_records_list = TransactionRecord.objects.filter(credit_card=self.object.id).order_by('date')
-        for tr in transaction_records_list:
-            for k, v in model_to_dict(tr).items():
-                print("k: ", k, "v: ", v)
-            print("*********************")
-        context['transaction_records_list'] = transaction_records_list
-        if transaction_records_list.count() == 0:
-            context['transaction_records_total'] = 0
-        else:
-            context['transaction_records_total'] = round(transaction_records_list.aggregate(Sum('amount'))['amount__sum'], 2)
+        print("HIYA")
+        context = super().get_context_data()
 
+        if 'account_id' in kwargs:
+            context['account_id'] = kwargs['account_id']
+        else:
+            context['account_id'] = self.object.id
+
+        transactionrecord_queryset = TransactionRecord.objects.filter(credit_card_id=self.object.id)
+        date_range = self.get_date_range()
+        transaction_types = self.get_transaction_types()
+        accounts = self.get_accounts()
+        all_accounts = CreditCard.objects.filter(user=self.request.user)
+        if accounts is None:
+            accounts = all_accounts
+        transaction_record_list = transactionrecord_queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, credit_card__in=all_accounts).order_by('-date')
+        context['transaction_record_list'] = transaction_record_list
+
+        transaction_types = self.get_transaction_types()
+
+        date_range = self.get_date_range()
+        context['start_date'] = date_range[0]
+        context['end_date'] = date_range[1]
+
+        accounts = self.get_accounts()
+        all_accounts = list(Account.objects.filter(user=self.request.user))
+        all_accounts.extend(list(CreditCard.objects.filter(user=self.request.user)))
+        if accounts is None:
+            accounts = all_accounts
+        context['accounts'] = accounts
+        context['all_accounts'] = all_accounts
+        print("context['accounts']: ", context['accounts'])
+
+        print("date_range: ", date_range)
+
+        # self.object_list = super().get_queryset().filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
+
+        context['next_url'] = 'credit_card_detail_view'
+        context['account_type'] = 'credit_card'
+
+        context['transactions'] = transaction_record_list
+        # context['transactions'] = [self.format_transaction(transaction) for transaction in transactions_list]
+        if transaction_record_list.count() == 0:
+            context['transactions_total'] = 0
+        else:
+            context['transactions_total'] = round(transaction_record_list.aggregate(Sum('amount'))['amount__sum'], 2)
+        context['base_template'] = 'budgeter/no_base.html'
         return context
 
-class CreditCardListView(ListView):
+
+class CreditCardListView(LoginRequiredMixin, ListView):
     model = CreditCard
 
-class TransactionRecordOptions(TemplateView):
+class TransactionRecordOptions(LoginRequiredMixin, TemplateView):
     template_name = 'budgeter/transaction_record_options.html'
 
 ## Should probably create separate views for each TransactionRecord Form
 
-class CreateTransactionRecord(FormView):
+class CreateTransactionRecord(LoginRequiredMixin, FormView):
     template_name = 'budgeter/transactionrecord_form.html'
     form_class = TransactionRecordBaseForm
 
@@ -195,7 +431,7 @@ class CreateTransactionRecord(FormView):
         print("kwargs['slug']: ", self.kwargs['slug'])
         form = super().get_form(form_class)
         form.fields['date'].widget = forms.DateInput(attrs={'type': 'date'})
-        print("Account.objects.values_list('id', 'name'): ", list(Account.objects.values_list('id', 'name')))
+        print("Account.objects.values_list('id', 'name'): ", list(Account.objects.filter(user=self.request.user).values_list('id', 'name')))
 
 
 
@@ -206,12 +442,12 @@ class CreateTransactionRecord(FormView):
         credit_card_choice_list = [
             ('', ''),
         ]
-        credit_card_choice_list.extend(list(CreditCard.objects.values_list('id', 'name')))
+        credit_card_choice_list.extend(list(CreditCard.objects.filter(user=self.request.user).values_list('id', 'name')))
 
         account_choice_list = [
             ('', ''),
         ]
-        account_choice_list.extend(list(Account.objects.values_list('id', 'name')))
+        account_choice_list.extend(list(Account.objects.filter(user=self.request.user).values_list('id', 'name')))
 
         print("credit_card_choice_list: ", credit_card_choice_list)
 
@@ -247,6 +483,10 @@ class CreateTransactionRecord(FormView):
             print("transfer")
             self.exclude.remove('transfer_to_account')
             form_class = TransactionRecordTransferForm
+        # if self.kwargs['slug'] == 'adjustment':
+        #     print("adjustment")
+        #     self.exclude.remove('transfer_to_account')
+        #     form_class = TransactionRecordAdjustmentForm
         # return modelform_factory(self.model, exclude=self.exclude)
         print("form_class: ", form_class)
         return form_class
@@ -255,8 +495,8 @@ class CreateTransactionRecord(FormView):
         context = super().get_context_data(**kwargs)
         transaction_record_type = self.kwargs['slug']
         context['transaction_record_type'] = transaction_record_type
-        account_ids = Account.objects.all().values_list('id', 'name')
-        credit_card_ids = CreditCard.objects.all().values_list('id', 'name')
+        account_ids = Account.objects.filter(user=self.request.user).values_list('id', 'name')
+        credit_card_ids = CreditCard.objects.filter(user=self.request.user).values_list('id', 'name')
         context['account_ids'] = account_ids
         context['creditcard_ids'] = credit_card_ids
         if transaction_record_type == 'expense':
@@ -269,6 +509,8 @@ class CreateTransactionRecord(FormView):
             context['transactionrecord_form'] = 'budgeter/withdrawal_form.html'
         elif transaction_record_type == 'transfer':
             context['transactionrecord_form'] = 'budgeter/transfer_form.html'
+        elif transaction_record_type == 'adjustment':
+            context['transactionrecord_form'] = 'budgeter/adjustment_form.html'
         return context
 
     def form_valid(self, form):
@@ -277,15 +519,14 @@ class CreateTransactionRecord(FormView):
         self.instance = self.create_transaction_record()
         print("self.request.POST: ", self.request.POST)
         print("self.request.POST.get('type'): ", self.request.POST.get('type'))
-        if self.kwargs['slug'] == 'credit_card_payment':
-            account = Account.objects.get(id=self.request.POST.get("account"))
-            self.instance.type = 'C'
-            self.instance.ledger_type = 'D'
-            self.instance.account = None
-            self.instance.description = f'Payment from {account.name} to {self.instance.credit_card.name}'
-            if not self.request.POST.get('exclude_from_accounting'):
-                self.update_credit_card_balance(Decimal(self.request.POST.get('amount')) * int(-1))
-                self.update_account_balance(Decimal(self.request.POST.get('amount')) * -1)
+        # if self.kwargs['slug'] == 'credit_card_payment':
+            # account = Account.objects.get(id=self.request.POST.get("account"))
+            # self.instance.type = 'C'
+            # self.instance.ledger_type = 'D'
+            # self.instance.description = f'Payment from {account.name} to {self.instance.credit_card.name}'
+            # if not self.request.POST.get('exclude_from_accounting'):
+            #     self.update_credit_card_balance(Decimal(self.request.POST.get('amount')) * int(-1))
+            #     self.update_account_balance(Decimal(self.request.POST.get('amount')) * -1)
         if self.kwargs['slug'] == 'expense' and not self.request.POST.get('exclude_from_accounting'):
             if self.request.POST.get('credit_card'):
                 self.update_credit_card_balance(Decimal(self.request.POST.get('amount')))
@@ -304,21 +545,55 @@ class CreateTransactionRecord(FormView):
         if self.kwargs['slug'] == 'expense':
             self.instance.type = 'X'
             self.instance.ledger_type = 'D'
-        if self.kwargs['slug'] == 'transfer':
-            print("***TRANSFER***")
-            print("self.request.POST: ", self.request.POST)
-            transfer_to_account = Account.objects.get(id=self.request.POST.get('transfer_to_account'))
-            self.instance.type = 'T'
+        if self.kwargs['slug'] == 'transfer' or self.kwargs['slug'] == 'credit_card_payment':
             self.instance.ledger_type = 'D'
-            self.instance.description = f'Transfer to {transfer_to_account.name}'
-            self.update_account_balance(Decimal(self.request.POST.get('amount')) * -1)
-            transfer_from_instance = self.create_transaction_record()
-            transfer_from_instance.account = transfer_to_account
-            transfer_from_instance.type = 'T'
-            transfer_from_instance.ledger_type = 'C'
-            transfer_from_instance.description = f'Transfer from {instance.account.name}'
-            transfer_from_instance.save()
-            self.update_account_balance(Decimal(self.request.POST.get('amount')), transfer_to_account.id)
+            account_paid_to = self.create_transaction_record()
+            account_paid_to.ledger_type = 'C'
+            if self.kwargs['slug'] == 'credit_card_payment':
+                print("self.request.POST: ", self.request.POST)
+                account = Account.objects.get(id=self.request.POST.get("account"))
+                credit_card = CreditCard.objects.get(id=self.request.POST.get("credit_card"))
+                self.instance.type = 'C'
+                self.instance.credit_card = None
+                self.instance.description = Description.objects.get_or_create(user=self.request.user, name=f'Payment to {account.name}')[0]
+                account_paid_to.account = account
+                account_paid_to.type = 'C'
+                account_paid_to.account = None
+                account_paid_to.description = Description.objects.get_or_create(user=self.request.user, name=f'Payment from {credit_card.name}')[0]
+                account_paid_to.save()
+                credit_card_payment = CreditCardPayment()
+                credit_card_payment.account = self.instance
+                credit_card_payment.credit_card = account_paid_to
+                credit_card_payment.user = self.request.user
+                credit_card_payment.save()
+                print("account_paid_to: ", account_paid_to)
+                print("account_paid_to.credit_card: ", account_paid_to.credit_card)
+                print("account_paid_to.account: ", account_paid_to.account)
+                # self.update_account_balance(Decimal(self.request.POST.get('amount')), account_paid_to.account.id)
+
+                if not self.request.POST.get('exclude_from_accounting'):
+                    self.update_credit_card_balance(Decimal(self.request.POST.get('amount')) * int(-1))
+                    self.update_account_balance(Decimal(self.request.POST.get('amount')) * -1)
+
+            if self.kwargs['slug'] == 'transfer':
+                transfer_to_account = Account.objects.get(user=self.request.user, id=self.request.POST.get('transfer_to_account'))
+                self.instance.type = 'T'
+                self.instance.description = Description.objects.get_or_create(user=self.request.user, name=f'Transfer to {transfer_to_account.name}')[0]
+                self.update_account_balance(Decimal(self.request.POST.get('amount')) * -1)
+                account_paid_to.account = transfer_to_account
+                account_paid_to.type = 'T'
+                account_paid_to.description = Description.objects.get_or_create(user=self.request.user, name=f'Transfer from {self.instance.account.name}')[0]
+                account_paid_to.save()
+                transfer_accounts = TransferAccounts()
+                transfer_accounts.account_to = self.instance
+                transfer_accounts.account_from = account_paid_to
+                transfer_accounts.save()
+                self.update_account_balance(Decimal(self.request.POST.get('amount')), transfer_to_account.id)
+
+
+
+
+
             # instance.type = 'X'
             # instance.ledger_type = 'D'
 
@@ -326,18 +601,23 @@ class CreateTransactionRecord(FormView):
         return super().form_valid(form)
 
     def create_transaction_record(self):
+        print("self.request.POST: ", self.request.POST.get('description'))
+        print("self.request.POST.get('description') == None: ", self.request.POST.get('description') == None)
         new_transaction = TransactionRecord()
         new_transaction.date = self.request.POST.get('date')
         new_transaction.amount = self.request.POST.get('amount')
-        new_transaction.description = self.request.POST.get('description')
-        new_transaction.category = self.request.POST.get('category')
-        new_transaction.sub_category = self.request.POST.get('sub_category')
+        if 'description' in self.request.POST and self.request.POST.get('description') != '':
+            new_transaction.description = Description.objects.get_or_create(user=self.request.user, name=self.request.POST.get('description'))[0]
+        if 'category' in self.request.POST and self.request.POST.get('category') != '':
+            new_transaction.category = Category.objects.get_or_create(user=self.request.user, name=self.request.POST.get('category'))[0]
+        if 'sub_category' in self.request.POST and self.request.POST.get('sub_category') != '':
+            new_transaction.sub_category = SubCategory.objects.get_or_create(user=self.request.user, name=self.request.POST.get('sub_category'))[0]
         if self.request.POST.get('account'):
             print("self.request.POST.get('account'): ", self.request.POST.get('account'))
-            new_transaction.account = Account.objects.get(id=self.request.POST.get('account'))
+            new_transaction.account = Account.objects.get(user=self.request.user, id=self.request.POST.get('account'))
         if self.request.POST.get('credit_card'):
             print("self.request.POST.get('credit_card'): ", self.request.POST.get('credit_card'))
-            new_transaction.credit_card = CreditCard.objects.get(id=self.request.POST.get('credit_card'))
+            new_transaction.credit_card = CreditCard.objects.get(user=self.request.user, id=self.request.POST.get('credit_card'))
         #add timestamp?
         if not self.request.POST.get('has_expense_items'):
             new_transaction.has_expense_items = False
@@ -347,6 +627,7 @@ class CreateTransactionRecord(FormView):
             new_transaction.exclude_from_accounting = False
         else:
             new_transaction.exclude_from_accounting = True
+        new_transaction.user = self.request.user
         new_transaction.save()
         print("new_transaction: ", new_transaction)
         return new_transaction
@@ -359,9 +640,9 @@ class CreateTransactionRecord(FormView):
 
     def update_account_balance(self, amount, account_id=None):
         if account_id:
-            account = Account.objects.get(id=account_id)
+            account = Account.objects.get(user=self.request.user, id=account_id)
         else:
-            account = Account.objects.get(id=self.request.POST.get('account'))
+            account = Account.objects.get(user=self.request.user, id=self.request.POST.get('account'))
         account.balance += amount
         account.save()
         return
@@ -376,11 +657,11 @@ class CreateTransactionRecord(FormView):
         if self.request.POST.get('has_expense_items'):
             return reverse('add_expense_item', kwargs = { 'transaction_record_pk': self.instance.id })
         else:
-            return reverse('index')
+            return reverse('dashboard', kwargs={ 'pk': self.request.user.id })
 
-class TransactionRecordsListView(ListView):
+class TransactionRecordsListView(LoginRequiredMixin, ListView):
     model = TransactionRecord
-    # context_object_name = 'transactions'
+    context_object_name = 'transaction_record_list'
 
     def get_transaction_types(self):
         if 'transaction_types' in self.request.GET and self.request.GET['transaction_types'] is not '':
@@ -408,18 +689,39 @@ class TransactionRecordsListView(ListView):
             return ['2021-01-01', datetime.today().strftime('%Y-%m-%d')]
 
     def get_queryset(self):
+        current_url = resolve(self.request.path_info).url_name
+        print("account_type: ", self.request.POST.get('account_type'))
+        print("self.kwargs: ", self.kwargs)
         queryset = super().get_queryset()
         date_range = self.get_date_range()
         transaction_types = self.get_transaction_types()
+        print("transaction_types: ", transaction_types)
         accounts = self.get_accounts()
-        all_accounts = Account.objects.all()
-        if accounts is None:
-            accounts = all_accounts
-        queryset = queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
+
+        if "account_id" in self.kwargs and self.kwargs['account_id'] != 'None':
+            print("account_id: ", self.kwargs['account_id'])
+            accounts = Account.objects.filter(id=self.kwargs['account_id'])
+            all_accounts = Account.objects.all()
+            if accounts is None:
+                accounts = all_accounts
+            queryset = queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
+        elif 'account_type' in  self.kwargs and self.kwargs['account_type'] == 'credit_card':
+            accounts = CreditCard.objects.all()
+            queryset = queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, credit_card__in=accounts).order_by('-date')
+        elif 'account_type' in  self.kwargs and self.kwargs['account_type'] == 'account':
+            accounts = Account.objects.all()
+            queryset = queryset.filter(date__gte=date_range[0], date__lte=date_range[1], type__in=transaction_types, account__in=accounts).order_by('-date')
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data()
+
+        if 'account_id' in self.kwargs:
+            print("IN")
+            context['account_id'] = self.kwargs['account_id']
+            print("self.kwargs['account_id']: ", self.kwargs['account_id'])
+        else:
+            context['account_id'] = None
 
         transaction_types = self.get_transaction_types()
 
@@ -442,6 +744,8 @@ class TransactionRecordsListView(ListView):
 
         print("self.object_list: ", self.object_list)
 
+        context['next_url'] = 'transaction_records_list_view'
+
         context['transactions'] = self.object_list
         # context['transactions'] = [self.format_transaction(transaction) for transaction in transactions_list]
         if self.object_list.count() == 0:
@@ -451,7 +755,7 @@ class TransactionRecordsListView(ListView):
         context['base_template'] = 'budgeter/base.html'
         return context
 
-class TransactionRecordDetailView(DetailView):
+class TransactionRecordDetailView(LoginRequiredMixin, DetailView):
     model = TransactionRecord
 
     def get_context_data(self, **kwargs):
@@ -461,31 +765,88 @@ class TransactionRecordDetailView(DetailView):
             context['expense_items'] = expense_items
         return context
 
-class DeleteTransactionRecordView(DeleteView):
+class DeleteTransactionRecordView(LoginRequiredMixin, DeleteView):
     model = TransactionRecord
 
     def get_success_url(self):
-        self.update_balances()
-        return reverse('index')
+        if self.object.type == 'T':
+            try:
+                self.transfer_accounts = TransferAccounts.objects.get(user=self.request.user, account_to=self.object)
+            except:
+                self.transfer_accounts = TransferAccounts.objects.get(user=self.request.user, account_from=self.object)
+
+            if self.transfer_accounts.account_to == self.object:
+                self.delete_record = TransactionRecord.objects.get(user=self.request.user, id=self.transfer_accounts.account_from.id)
+            else:
+                self.delete_record = TransactionRecord.objects.get(user=self.request.user, id=self.transfer_accounts.account_to.id)
+            self.update_balances()
+            self.delete_record.delete()
+            self.transfer_accounts.delete()
+        if self.object.type == 'C':
+            try:
+                self.credit_card_payment = CreditCardPayment.objects.get(user=self.request.user, account=self.object)
+            except:
+                self.credit_card_payment = CreditCardPayment.objects.get(user=self.request.user, credit_card=self.object)
+
+            print("self.credit_card_payment: ", self.credit_card_payment)
+            print("self.credit_card_payment.account: ", self.credit_card_payment.account)
+            print("self.credit_card_payment.credit_card: ", self.credit_card_payment.credit_card)
+            if self.credit_card_payment.account == self.object:
+                self.delete_record = TransactionRecord.objects.get(user=self.request.user, id=self.credit_card_payment.credit_card.id)
+            else:
+                self.delete_record = TransactionRecord.objects.get(user=self.request.user, id=self.credit_card_payment.account.id)
+            self.update_balances()
+            self.delete_record.delete()
+            self.credit_card_payment.delete()
+        return reverse('dashboard', kwargs = { 'pk': self.object.id })
 
     def update_balances(self):
         print("self.object.type: ", self.object.type)
         if self.object.type == 'X' or self.object.type == 'W':
             if self.object.account:
-                account = Account.objects.get(id=self.object.account.id)
+                print("ACCOUNT")
+                account = Account.objects.get(user=self.request.user, id=self.object.account.id)
                 account.balance += self.object.amount
                 account.save()
             if self.object.credit_card:
-                credit_card = CreditCard.objects.get(id=self.object.credit_card.id)
-                credit_card.balance -= self.object.amount
-                credit_card.save()
+                print("CREDIT_CARD")
+                if self.object.type == 'C':
+                    print("PAYMENT")
+                    credit_card = CreditCard.objects.get(user=self.request.user, id=self.object.credit_card.id)
+                    credit_card.balance += self.object.amount
+                    credit_card.save()
+                else:
+                    print("ELSE")
+                    credit_card = CreditCard.objects.get(user=self.request.user, id=self.object.credit_card.id)
+                    credit_card.balance -= self.object.amount
+                    credit_card.save()
+        elif self.object.type == 'C':
+            print("self.credit_card_payment.account: ", self.credit_card_payment.account.account)
+            print("self.credit_card_payment.credit_card: ", self.credit_card_payment.credit_card.credit_card)
+            account = Account.objects.get(user=self.request.user, id=self.credit_card_payment.account.account.id)
+            account.balance += self.object.amount
+            account.save()
+            credit_card = CreditCard.objects.get(user=self.request.user, id=self.credit_card_payment.credit_card.credit_card.id)
+            credit_card.balance += self.object.amount
+            credit_card.save()
         elif self.object.type == 'D':
-            account = Account.objects.get(id=self.object.account.id)
+            account = Account.objects.get(user=self.request.user, id=self.object.account.id)
             account.balance -= self.object.amount
             account.save()
+        elif self.object.type == 'T':
+            print("self.transfer_accounts.account_to.id: ", self.transfer_accounts.account_to.id)
+            print("self.transfer_accounts.account_from.id: ", self.transfer_accounts.account_from.id)
+            account_to = Account.objects.get(user=self.request.user, id=self.transfer_accounts.account_to.account.id)
+            account_from = Account.objects.get(user=self.request.user, id=self.transfer_accounts.account_from.account.id)
+            amount = self.object.amount
+            account_to.balance += amount
+            account_to.save()
+            account_from.balance -= amount
+            account_from.save()
+
         return
 
-class UpdateTransactionRecordView(FormView):
+class UpdateTransactionRecordView(LoginRequiredMixin, FormView):
     model = TransactionRecord
     fields = '__all__'
     template_name = 'budgeter/transactionrecord_form.html'
@@ -545,7 +906,11 @@ class UpdateTransactionRecordView(FormView):
         print("transaction_record_type: ", transaction_record_type)
         context['transactionrecord_form'] = f'budgeter/{transaction_record_type}_form.html'
         account_ids = Account.objects.all().values_list('id', 'name')
-        credit_card_ids = CreditCard.objects.all().values_list('id', 'name')
+        if transaction_record.type == 'C':
+            print("self.request.POST.get('credit_card'): ", self.request.POST.get('credit_card'))
+            credit_card_ids = [(transaction_record.credit_card.id, transaction_record.credit_card.name)]
+        else:
+            credit_card_ids = CreditCard.objects.all().values_list('id', 'name')
         context['account_ids'] = account_ids
         context['creditcard_ids'] = credit_card_ids
         print("context: ", context)
@@ -562,19 +927,68 @@ class UpdateTransactionRecordView(FormView):
                 if transaction_record.amount != self.request.POST.get('amount'):
                     self.update_account_balance(transaction_record.account.id, Decimal(transaction_record.amount) * -1)
                     self.update_account_balance(self.request.POST.get('account'), Decimal(self.request.POST.get('amount')))
-            elif self.request.POST.get('credit_card') is not '':
+            if self.request.POST.get('credit_card') is not '':
                 if transaction_record.amount != self.request.POST.get('amount'):
-                    self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(self.request.POST.get('amount')) - Decimal(transaction_record.amount))
+                    self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(transaction_record.amount) * -1)
+                    self.update_credit_card_balance(self.request.POST.get('credit_card'), Decimal(self.request.POST.get('amount')))
+                    print("FUCK")
+                    # self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(transaction_record.amount) - Decimal(self.request.POST.get('amount')))
 
         elif transaction_record.ledger_type == 'D':
             print("DEBIT")
-            if self.request.POST.get('account') is not '':
+            print("transaction_record.amount: ", transaction_record.amount)
+            print("self.request.POST.get('amount'): ", self.request.POST.get('amount'))
+            if transaction_record.type is 'C':
                 if transaction_record.amount != self.request.POST.get('amount'):
                     self.update_account_balance(transaction_record.account.id, Decimal(transaction_record.amount))
                     self.update_account_balance(self.request.POST.get('account'), Decimal(self.request.POST.get('amount')) * -1)
-            elif self.request.POST.get('credit_card') is not '':
-                if transaction_record.amount != self.request.POST.get('amount'):
-                    self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(self.request.POST.get('amount')) - Decimal(transaction_record.amount))
+                    # self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(transaction_record.amount))
+                    self.update_credit_card_balance(self.request.POST.get('credit_card'), Decimal(self.request.POST.get('amount')) - Decimal(transaction_record.amount))
+                    # self.update_account_balance(self.request.POST.get('account'), Decimal(self.request.POST.get('amount')))
+            elif transaction_record.type is 'X' or transaction_record.type is 'W':
+                if self.request.POST.get('account') is not '':
+                    if transaction_record.amount != self.request.POST.get('amount'):
+                        if transaction_record.credit_card is None:
+                            self.update_account_balance(transaction_record.account.id, Decimal(transaction_record.amount))
+                        else:
+                            self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(transaction_record.amount))
+                        self.update_account_balance(self.request.POST.get('account'), Decimal(self.request.POST.get('amount')) * -1)
+                if self.request.POST.get('credit_card') is not '':
+                    if transaction_record.amount != self.request.POST.get('amount'):
+                        if transaction_record.account is None:
+                            self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(transaction_record.amount))
+                            self.update_credit_card_balance(self.request.POST.get('credit_card'), Decimal(self.request.POST.get('amount')) * -1)
+                        else:
+                            print("self.request.POST.get('account'): ", self.request.POST.get('account'), ": ", type(self.request.POST.get('account')))
+                            self.update_account_balance(transaction_record.account.id, Decimal(transaction_record.amount))
+                            self.update_credit_card_balance(self.request.POST.get('credit_card'), Decimal(self.request.POST.get('amount')) * -1)
+                            # self.update_account_balance(int(self.request.POST.get('account')), Decimal(self.request.POST.get('amount')))
+
+                ######################
+            # if self.request.POST.get('account') is not '':
+            #     if transaction_record.amount != self.request.POST.get('amount'):
+            #         if transaction_record.credit_card is None:
+            #             print("ACCOUNT --->>>>")
+            #             self.update_account_balance(transaction_record.account.id, Decimal(transaction_record.amount))
+            #         else:
+            #             print("CREDIT CARD--->>>>")
+            #             self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(transaction_record.amount))
+            #         self.update_account_balance(self.request.POST.get('account'), Decimal(self.request.POST.get('amount')) * -1)
+            # if self.request.POST.get('credit_card') is not '':
+            #     if transaction_record.amount != self.request.POST.get('amount'):
+            #         if transaction_record.type == 'C':
+            #             print("FUCK MY LIFE")
+            #             self.update_credit_card_balance(self.request.POST.get('credit_card'), Decimal(self.request.POST.get('amount')) - Decimal(transaction_record.amount))
+                        # self.update_account_balance(self.request.POST.get('account'), Decimal(self.request.POST.get('amount')))
+                    # elif transaction_record.type == 'X':
+                    #     if transaction_record.account is None:
+                    #         self.update_credit_card_balance(transaction_record.credit_card.id, Decimal(transaction_record.amount))
+                    #         self.update_credit_card_balance(self.request.POST.get('credit_card'), Decimal(self.request.POST.get('amount')) * -1)
+                    #     else:
+                    #         print("self.request.POST.get('account'): ", self.request.POST.get('account'), ": ", type(self.request.POST.get('account')))
+                    #         self.update_account_balance(transaction_record.account.id, Decimal(transaction_record.amount))
+                    #         self.update_credit_card_balance(self.request.POST.get('credit_card'), Decimal(self.request.POST.get('amount')) * -1)
+                            # self.update_account_balance(int(self.request.POST.get('account')), Decimal(self.request.POST.get('amount')))
 
         for key, value in self.request.POST.items():
             if key is not 'csrfmiddlewaretoken':
@@ -612,6 +1026,7 @@ class UpdateTransactionRecordView(FormView):
 
     def update_account_balance(self, account_id, difference):
         print("update_account_balance")
+        print("account_id: ", account_id)
         account = Account.objects.get(id=account_id)
         account.balance += difference
         account.save()
@@ -622,15 +1037,17 @@ class UpdateTransactionRecordView(FormView):
         print("update_credit_card_balance")
         print("difference: ", difference)
         credit_card = CreditCard.objects.get(id=credit_card_id)
-        credit_card.balance += difference
+        print("CREDIT CARD BALANCE BEFORE: ", credit_card.balance)
+        credit_card.balance -= difference
         credit_card.save()
+        print("CREDIT CARD BALANCE AFTER: ", credit_card.balance)
         return
 
     # def get_success_url(self):
     #     return reverse('index')
 
 
-class ExpenseItemCreateView(CreateView):
+class ExpenseItemCreateView(LoginRequiredMixin, CreateView):
     model = ExpenseItem
     # exclude = ['expense']
 #
@@ -667,7 +1084,7 @@ class ExpenseItemCreateView(CreateView):
         else:
             return reverse('index')
 
-class ExpenseItemUpdateView(UpdateView):
+class ExpenseItemUpdateView(LoginRequiredMixin, UpdateView):
     model = ExpenseItem
     fields = '__all__'
 
@@ -690,14 +1107,14 @@ class ExpenseItemUpdateView(UpdateView):
     def get_success_url(self):
         return reverse('transaction_record_detail_view', kwargs={ 'pk': self.object.transaction_record.id })
 
-class ExpenseItemDeleteView(DeleteView):
+class ExpenseItemDeleteView(LoginRequiredMixin, DeleteView):
     model = ExpenseItem
 
     def get_success_url(self):
         return reverse('transaction_record_detail_view', kwargs={ 'pk': self.object.transaction_record.id })
 
 
-class ExpenseItemListView(ListView):
+class ExpenseItemListView(LoginRequiredMixin, ListView):
     model = ExpenseItem
     context_object_name = 'expense_items'
 
