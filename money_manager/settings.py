@@ -91,12 +91,6 @@ DATABASES = {
     }
 }
 
-print("config('NAME'): ", config('NAME'))
-print("config('USER'): ", config('DB_USER'))
-print("config('PASSWORD'): ", config('PASSWORD'))
-print("config('HOST'): ", config('HOST'))
-print("config('PORT'): ", config('PORT'))
-
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
