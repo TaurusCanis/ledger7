@@ -1,4 +1,8 @@
 {% extends 'budgeter/base.html' %}
+{% load static %}
+{% block head %}
+  <link rel="stylesheet" type="text/css" href="{% static 'budgeter/styles/update_account.css' %}">
+{% endblock %}
 {% block content %}
 <h1>Account Update</h1>
 <form method="post">{% csrf_token %}

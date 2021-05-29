@@ -1,0 +1,67 @@
+{% load static %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'budgeter/styles/credit_card_payment_form.css' %}">
+{% endblock %}
+<div class="row justify-content-evenly py-2">
+  <div class="col text-center">
+    <h3>Choose a Credit Card to Pay</h3>
+    <div class="credit_cards">
+      {% for radio in form.credit_card %}
+      <label for="{{ radio.id_for_label }}">
+          {{ radio.tag }}
+          <span class="radio box">{{ radio.choice_label }}</span>
+      </label>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+<div class="col text-center">
+  <h3>Choose a Payment Method</h3>
+  <div class="credit_cards">
+    {% for radio in form.account %}
+    <label for="{{ radio.id_for_label }}">
+        {{ radio.tag }}
+        <span class="radio box">{{ radio.choice_label }}</span>
+    </label>
+    {% endfor %}
+  </div>
+</div>
+
+{% comment %}
+<div>
+  {{ form.credit_card }}
+  <h2 class="text-center">Choose Payment Method</h2>
+  <div class="row">
+    {% if credit_cards %}
+    <div class="col">
+    <h2>Choose Credit Card to Pay</h2>
+    <h3 class="text-center">Credit Cards</h3>
+    {% for credit_card in credit_cards %}
+    <div class="row justify-content-evenly">
+      <div class="col text-center">
+        <button type="button" id="creditcard_{{ credit_card.account_base.id }}" class="btn border border-success text-success credit-card">
+          {{ credit_card }}
+        </button>
+      </div>
+    </div>
+    {% endfor %}
+    </div>
+    {% endif %}
+  {% if bank_accounts %}
+  <div class="col">
+    <h2>Choose Bank Account to Pay From</h2>
+  <h3 class="text-center">Bank Accounts</h3>
+  {% for bank_account in bank_accounts %}
+  <div class="row justify-content-evenly">
+    <div class="col text-center">
+      <button type="button" id="bankaccount_{{ bank_account.account_base.id }}" class="btn border border-success text-success payment-method pm-account">
+        {{ bank_account }}
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+  </div>
+  {% endif %}
+  </div>
+</div>
+{% endcomment %}

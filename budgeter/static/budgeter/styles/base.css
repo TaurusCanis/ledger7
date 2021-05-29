@@ -1,0 +1,65 @@
+body {
+  font-size: 200%;
+}
+
+.container {
+  height: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: 50px 1fr 50px;
+  grid-template-areas:
+    "header"
+    "main"
+    "footer"
+}
+
+.header {
+  grid-area: header;
+}
+
+.main {
+  align-self: center;
+}
+
+.footer {
+  grid-area: footer;
+  align-self: end;
+}
+
+.border {
+  width: 96%;
+  padding: 1em;
+  border: 1px solid black;
+  border-radius: 5px;
+}
+
+.main {
+  display: grid;
+  justify-items: center;
+}
+
+input[type=submit] {
+    padding:5px 15px;
+    background:#ccc;
+    border:0 none;
+    cursor:pointer;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.transactionrecord-list {
+  text-align: center;
+}
+
+.transaction-record-list-table {
+  width: 100%;
+  margin: 1em;
+}
+
+.transaction-record-list-table tr td {
+  text-align: center;
+}
+
+.transaction-list-heading {
+  text-align: center;
+}

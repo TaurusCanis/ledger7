@@ -1,0 +1,54 @@
+.main {
+  height: 100%;
+  padding: 1.5em 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-template-rows: auto;
+  justify-items: center;
+  gap: 1em;
+  /* align-content: space-evenly; */
+  grid-template-areas:
+    "available-funds available-funds"
+    "account-list creditcard-list"
+    "transactionrecord-list transactionrecord-list"
+}
+
+/* .border-2 {
+  width: 94%;
+} */
+
+.available-funds {
+  grid-area: available-funds;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.account-list {
+  grid-area: account-list;
+  justify-self: end;
+}
+
+.creditcard-list {
+  grid-area: creditcard-list;
+  justify-self: start;
+}
+
+.transactionrecord-list {
+  grid-area: transactionrecord-list;
+}
+
+.account-display-text {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 1em;
+}
+
+.account-display-text ul {
+  display: flex;
+  flex-direction: column;
+  gap: .25em;
+}

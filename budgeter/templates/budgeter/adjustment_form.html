@@ -1,17 +1,46 @@
 {% block content %}
-<h1>Add Adjustment</h1>
-<form method="post">{% csrf_token %}
+
     <div class="row justify-content-evenly py-2">
-      <div class="col text-center">
-        <button type="button" id="account_{{ account.0 }}" class="btn border border-success text-success payment-method pm-account {% if account.0 == selected_account %}selected btn-success text-light{% endif %}">
-          Add Funds
-        </button>
-        <button type="button" id="account_{{ account.0 }}" class="btn border border-success text-success payment-method pm-account {% if account.0 == selected_account %}selected btn-success text-light{% endif %}">
-          Remove Funds
-        </button>
+      <div class="ledger-choice">
+        {% for radio in form.ledger_type %}
+        <label for="{{ radio.id_for_label }}">
+            {{ radio.tag }}
+            <span class="radio box">{{ radio.choice_label }}</span>
+        </label>
+        {% endfor %}
       </div>
     </div>
-    {{ form.as_p }}
-    <input type="submit" value="Save">
-</form>
+    <div class="col text-center">
+      <h3>Choose an Account</h3>
+      <div class="accounts">
+        {% for radio in form.account %}
+        <label for="{{ radio.id_for_label }}">
+            {{ radio.tag }}
+            <span class="radio box">{{ radio.choice_label }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    {% comment %}
+    <div>
+      <h2 class="text-center">Choose Account</h2>
+      <div class="row">
+      {% if bank_accounts %}
+      <div class="col">
+      {% for bank_account in bank_accounts %}
+      <div class="row justify-content-evenly">
+        <div class="col text-center">
+          <button type="button" id="bankaccount_{{ bank_account.account_base.id }}" class="btn border border-success text-success payment-method pm-credit-card">
+            {{ bank_account }}
+          </button>
+        </div>
+      </div>
+      {% endfor %}
+      </div>
+      {% endif %}
+      </div>
+    </div>
+
+    {% endcomment %}
 {% endblock %}

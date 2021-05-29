@@ -1,37 +1,26 @@
 {% extends 'budgeter/base.html' %}
 {% block content %}
-<table>
-  <thead>
-    <th>Date</th>
-    <th>Amount</th>
-    <th>Description</th>
-    <th>Category</th>
-    <th>Payment From</th>
-  </thead>
-  <tbody>
-  <tr>
-    <td>{{ object.date }}</td>
-    <td>{{ object.amount }}</td>
-    <td>{{ object.description.name }}</td>
-    <td>{{ object.category.name }}</td>
-    {% if object.account %}
-    <td>{{ object.account }}</td>
-    {% elif object.credit_card %}
-    <td>{{ object.credit_card }}</td>
-    {% endif %}
-    {% comment %}
-{% for name, value in object.get_fields %}
-  {% if value %}
-  <td>{{ value }}</td>
-  {% endif %}
-{% endfor %}
-{% endcomment %}
-</tr>
-</tbody>
-</table>
+<h2>Transaction Detail</h2>
+<div>
+  <div>
+    <span>Date</span>: <span>{{ object.date }}</span>
+  </div>
+  <div>
+    <span>Amount</span>: <span>{{ object.amount }}</span>
+  </div>
+  <div>
+    <span>Description</span>: <span>{{ object.description.name }}</span>
+  </div>
+  <div>
+    <span>Category</span>: <span>{{ object.category.name }}</span>
+  </div>
+  <div>
+    <span>Payment From</span>: <span>{{ object.account.name }}</span>
+  </div>
+</div>
 <a href="{% url 'transaction_record_update_view' object.id %}">Edit Transaction Record</a>
-{% if object.has_expense_items %}
-<h1>Expense Items</h1>
+{% if object.tr_expense.has_expense_items %}
+<h3>Expense Items</h3>
 <table>
   <thead>
     <th>Name</th>
@@ -42,12 +31,13 @@
     <tr>
       <td>{{ expense_item.name }}</td>
       <td>{{ expense_item.amount }}</td>
-      <td><a href="{% url 'expense_item_update' expense_item.id %}">Edit Expense Item</a></td>
-      <td><a href="{% url 'expense_item_delete' expense_item.id %}">Delete Expense Item</a></td>
+      <td><a href="{% url 'expense_item_update' expense_item.id %}">Edit</a></td>
+      <td><a href="{% url 'expense_item_delete' expense_item.id %}">Delete</a></td>
     </tr>
     {% endfor %}
   </tbody>
 </table>
+<a href="{% url 'add_expense_item' expense_id=object.tr_expense.id %}">Add Expense Item</a>
 {% comment %}
 {% for expense_item in expense_items %}
 {% for key, value in expense_item.get_fields %}

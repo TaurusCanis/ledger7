@@ -3,6 +3,8 @@ var creditCards = document.querySelectorAll(".credit-card");
 var accountFormInput = document.querySelector("#id_account");
 var creditCardFormInput = document.querySelector("#id_credit_card");
 
+console.log("credit cards: ", creditCards)
+
 creditCards.forEach((item, i) => {
   item.addEventListener("click", function() {
     if (item.classList.contains("selected")) {
@@ -13,6 +15,7 @@ creditCards.forEach((item, i) => {
       clearCCSelections();
       classesToAdd = ["selected", "btn-success", "text-light"]
       item.classList.add(...classesToAdd);
+      console.log("ITEM: ", item)
       if (item.classList.contains("credit-card")) {
         creditCardFormInput.value = item.id.split("_")[1]
       }

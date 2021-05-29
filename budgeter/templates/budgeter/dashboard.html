@@ -1,38 +1,25 @@
 {% extends 'budgeter/base.html' %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'budgeter/styles/dashboard.css' %}">
+{% endblock %}
 {% block content %}
-  <div class="row justify-content-center">
-    <div class="col-6 border rounded-3 py-4">
-      <div class="row justify-content-center">
-        <div class="col text-center">
-          <h2>Total Funds Available:</h2>
-        </div>
-      </div>
-      <div class="row">
-        <div class="col text-center">
-          <h2>${{ total_available_funds }}</h2>
-        </div>
+    <div class="available-funds border">
+      <div class="funds-display-text">
+        <h2>Total Funds Available:</h2>
+        <h2>${{ total_available_funds }}</h2>
       </div>
     </div>
-  </div>
-  <div class="row my-4 justify-content-evenly">
-    <div class="col-5 border rounded-3 py-3">
+    <div class="account-list border border-2">
       {% include 'budgeter/account_list.html' %}
     </div>
-    <div class="col-5 border rounded-3 py-3">
+    <div class="creditcard-list border border-2">
       {% include 'budgeter/creditcard_list.html' %}
     </div>
-    {% comment %}
-    <div class="col">
-      {% include 'budgeter/upcoming_expense_list.html' %}
-    </div>
-    {% endcomment %}
-  </div>
-  <div class="row justify-content-center">
-    <div class="col-10 border rounded-3 p-4">
+    <div class="transactionrecord-list border">
       {% include 'budgeter/transaction_records_list.html' %}
       <div class="pt-2">
         <a href="{% url 'transaction_records_list_view' %}">View All Transaction Records</a>
       </div>
     </div>
-  </div>
 {% endblock %}

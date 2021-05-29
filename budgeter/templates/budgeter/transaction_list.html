@@ -36,7 +36,7 @@
     </tr>
   </thead>
   <tbody>
-  {% for transaction in transaction_records_list %}
+  {% for transaction in transactions %}
   <tr>
     <td>{{ transaction.transaction.date }}</td>
     <td>{{ transaction.transaction.get_type_display }}</td>

@@ -1,0 +1,18 @@
+.main {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  justify-items: center;
+  gap: 1em;
+  grid-template-areas:
+    "title"
+    "subtitle"
+}
+
+.title {
+  grid-area: title;
+}
+
+.subtitle {
+  grid-area: subtitle;
+}

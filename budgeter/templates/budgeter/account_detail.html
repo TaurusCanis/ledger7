@@ -1,18 +1,53 @@
 {% extends 'budgeter/base.html' %}
 {% load budgeter_extras %}
+{% load static %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'budgeter/styles/account_detail.css' %}">
+<style>
+  .form_dates {
+    width: 30%;
+  }
+</style>
+{% endblock %}
 {% block content %}
-    <h1>Account: {{ object.name }}</h1>
-    <h2>Balance: ${{ object.balance }}</h2>
-    <div><a href="{% url 'update_account' pk=account.id %}">Edit Account</a></div>
-    <div><a href="{% url 'create_transaction_record' %}">Add a Transaction</a></div>
-    <h2>Recent Transactions: </h2>
-    <form action="{% url 'account_detail' pk=account_id %}" method="GET">
+  <div class="title border">
+    <h1>Balance: ${{ account.account_base.balance }}</h1>
+    <h2>Account: {{ account.account_base.name }}</h2>
+    <a href="{% url 'update_account' pk=account.account_base.id %}">Edit Account</a>
+    <a href="{% url 'create_transaction_record' %}">Add a Transaction</a>
+  </div>
+  <form class="form border" action="{% url 'account_detail' slug='bank_account' pk=account.id %}" method="POST">
         {% csrf_token %}
-        <label for="start_date">Start Date</label>
-        <input type="date" name="start_date" {% if start_date %} value={{ start_date }} {% endif %}>
+          <div class="start-date-label">
+            {{ form.start_date.label_tag }}
+          </div>
+          <div class="start-date-input">
+            {{ form.start_date }}
+          </div>
+          <div class="end-date-label">
+            {{ form.end_date.label_tag }}
+          </div>
+          <div class="end-date-input">
+            {{ form.end_date }}
+          </div>
+          <div class="transaction-type-label">
+            {{ form.transaction_type.label_tag }}
+          </div>
+          <div class="transaction-type-input">
+            {{ form.transaction_type }}
+          </div>
+          <div class="submit-btn">
+            <input type="submit" value="Filter">
+          </div>
+
+        <!-- <label for="start_date">Start Date</label>
+        {{ form.start_date.value }}
+        <input type="date" name="start_date" {% if start_date %} value="{{ form.start_date.value|format_date }}" {% endif %}>
         <label for="end_date">End Date</label>
-        <input type="date" name="end_date" {% if end_date %} value={{ end_date }} {% endif %}>
-        <select multiple name="transaction_types">
+        <input type="date" name="end_date" {% if end_date %} value="{{ form.end_date.value|format_date }}" {% endif %}> -->
+
+
+        <!-- <select multiple name="transaction_types">
           <option value="D">Deposit</option>
           <option value="W">Withdrawal</option>
           <option value="T">Transfer</option>
@@ -26,15 +61,27 @@
             <option value="{{ account.id }}">{{ account.name }}</option>
           {% endfor %}
         </select>
-        {% endcomment %}
-        <input type="submit">
+        {% endcomment %} -->
+        <!-- {{ form.transaction_type }} -->
+
       </form>
       {% for account in all_accounts %}
+      {% comment %}
       {% if account|to_class_name == 'Account' %}
-      <a href="{% url 'account_detail' pk=account.id %}">{{ account.name }}</a>
-      {% elif account|to_class_name == 'CreditCard' %}
-      <a href="{% url 'credit_card_detail_view' pk=account.id %}">{{ account.name }}</a>
-      {% endif %}
+      {% endcomment %}
+      <a href="{% url 'account_detail' slug='bank_account' pk=account.id %}">{{ account.name }}</a>
       {% endfor %}
+      {% comment %}
+      {% elif account|to_class_name == 'CreditCard' %}
+      {% endcomment %}
+      {% for account in all_credit_cards %}
+      <a href="{% url 'credit_card_detail_view' pk=account.id %}">{{ account.name }}</a>
+      {% comment %}
+      {% endif %}
+      {% endcomment %}
+      {% endfor %}
+    <div class="data border">
+
         {% include 'budgeter/transaction_record_form_list.html' %}
+    </div>
 {% endblock %}

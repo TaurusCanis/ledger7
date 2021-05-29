@@ -1,5 +1,64 @@
 {% extends 'budgeter/base.html' %}
+{% load static %}
 {% load widget_tweaks %}
+{% block head %}
+<link rel="stylesheet" type="text/css" href="{% static 'budgeter/styles/transaction_record_form.css' %}">
+{% endblock %}
 {% block content %}
-{% include transactionrecord_form %}
+<h1 class="text-center">{{ transaction_record_heading }}</h1>
+<form class="form" method="POST">
+  {% csrf_token %}
+  <div>
+    <div>
+      {{ form.description.errors }}
+      {{ form.description.label_tag }}
+      {{ form.description }}
+    </div>
+    <div>
+      {{ form.paid_to.errors }}
+      {{ form.paid_to.label_tag }}
+      {{ form.paid_to }}
+    </div>
+    <div>
+      {{ form.amount.errors }}
+      {{ form.amount.label_tag }}
+      {{ form.amount }}
+    </div>
+    <div>
+      {{ form.date.errors }}
+      {{ form.date.label_tag }}
+      {{ form.date }}
+    </div>
+  </div>
+  {% include template_extension %}
+  <div>
+    <div>
+      {{ form.category.errors }}
+      {{ form.category.label_tag }}
+      {{ form.category }}
+    </div>
+    <div>
+      {{ form.sub_category.errors }}
+      {{ form.sub_category.label_tag }}
+      {{ form.sub_category }}
+    </div>
+    <div>
+      {{ form.note.errors }}
+      {{ form.note.label_tag }}
+      {{ form.note }}
+    </div>
+    <div>
+      {{ form.exclude_from_accounting.errors }}
+      {{ form.exclude_from_accounting.label_tag }}
+      {{ form.exclude_from_accounting }}
+    </div>
+    <div>
+      {{ form.has_expense_items.errors }}
+      {{ form.has_expense_items.label_tag }}
+      {{ form.has_expense_items }}
+    </div>
+  </div>
+<input type="submit">
+</form>
+<script type="text/javascript" src="{% static js_extension %}"></script>
 {% endblock %}
