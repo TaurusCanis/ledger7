@@ -1,0 +1,66 @@
+.main {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  justify-items: center;
+  align-items: start;
+  gap: 1em;
+  grid-template-areas:
+    "title"
+    "form"
+    "data"
+}
+
+.title {
+  grid-area: title;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: .5em;
+}
+
+.form {
+  grid-area: form;
+  display: grid;
+  grid-template-columns: auto;
+  grid-template-rows: auto;
+  align-items: center;
+  justify-items: center;
+  gap: 1em;
+  grid-template-areas:
+    "date-selections transaction-type-label transaction-type-input account-label account-input submit-btn"
+}
+
+.date-selections {
+  grid-area: date-selections;
+}
+
+.transaction-type-label {
+  grid-area: transaction-type-label;
+}
+
+.transaction-type-input {
+  grid-area: transaction-type-input;
+}
+
+.account-label {
+  grid-area: account-label;
+}
+
+.account-input {
+  grid-area: account-input;
+}
+
+div[class$="-label"] {
+  display: flex;
+  justify-content: center;
+}
+
+.account-input {
+  width: 100%;
+}
+
+select {
+  width: 100%;
+  padding: .5em;
+}

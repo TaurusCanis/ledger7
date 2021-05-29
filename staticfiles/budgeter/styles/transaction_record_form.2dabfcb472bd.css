@@ -1,0 +1,72 @@
+.main {
+  display: grid;
+  justify-items: center;
+  gap: 1em;
+}
+
+.form {
+  display: grid;
+  justify-items: center;
+  gap: 1em;
+}
+
+.payment-methods, .credit_cards, .accounts, .ledger-choice {
+  display: flex;
+}
+
+/* See https://dev.to/gscode/10-radio-button-css-style-examples-ph6 for CSS below */
+  input[type="radio"]{
+    display: none;
+  }
+  input[type="radio"]:checked + .box {
+      background-color: green;
+  }
+  input[type="radio"]:checked + span {
+        color: white;
+        /* transform: translateY(70px); */
+  }
+  input[type="radio"]:checked + span:before {
+          /* transform: translateY(0px); */
+          opacity: 1;
+  }
+  .box {
+    width: 200px;
+    height: 90px;
+    background-color: white;
+    border: 2px solid green;
+    border-radius: 5px;
+    transition: all 250ms ease;
+    will-change: transition;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* text-align: center; */
+    cursor: pointer;
+    position: relative;
+    /* font-family: $font; */
+    /* font-weight: 900; */
+    margin: .25em .5em;
+  }
+  .box:active {
+      /* transform: translateY(10px); */
+    }
+    span {
+      position: absolute;
+      /* transform: translate(0, 60px); */
+      left: 0;
+      right: 0;
+      transition: all 300ms ease;
+      /* font-size: 1.5em; */
+      user-select: none;
+      color: $green;
+    }
+      span:before {
+        /* font-size: 1.2em; */
+        /* font-family: FontAwesome; */
+        display: block;
+        /* transform: translateY(-80px); */
+        opacity: 0;
+        transition: all 300ms ease-in-out;
+        font-weight: normal;
+        color: white;
+      }

@@ -1,0 +1,49 @@
+.main {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  justify-items: center;
+  align-items: start;
+  gap: 1em;
+  grid-template-areas:
+    "title"
+    "form"
+    "data"
+}
+
+.title {
+  grid-area: title;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: .5em;
+}
+
+.form {
+  grid-area: form;
+  display: grid;
+  grid-template-columns: auto;
+  grid-template-rows: auto;
+  align-items: center;
+  justify-items: center;
+  gap: 1em;
+  grid-template-areas:
+    "start-date-label start-date-input end-date-label end-date-input transaction-type-label transaction-type-input submit-btn"
+}
+
+.data {
+  grid-area: data;
+}
+
+.form_dates {
+  grid-area: form_dates;
+}
+
+.transaction_type {
+  grid-area: transaction_type;
+}
+
+div[class$="-label"] {
+  display: flex;
+  justify-content: center;
+}
