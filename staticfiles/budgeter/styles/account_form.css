@@ -1,0 +1,48 @@
+.main {
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  justify-items: center;
+  gap: 1em;
+  grid-template-areas:
+    "heading"
+    "form"
+}
+
+.form {
+  border: 1px solid black;
+  border-radius: 5px;
+  padding: .5em;
+  grid-area: form;
+  display: grid;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  justify-items: center;
+  gap: 1em;
+  grid-template-areas:
+    "username"
+    "password"
+    "submit-btn"
+}
+
+.form p:first-of-type {
+  grid-area: username
+}
+
+.form p:first-of-type(2) {
+  grid-area: password
+}
+
+.submit-btn {
+  grid-area: submit-btn
+  background-color: red;
+}
+
+input[type=submit] {
+    padding:5px 15px;
+    background:#ccc;
+    border:0 none;
+    cursor:pointer;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+}
